@@ -1,8 +1,8 @@
 ---
 title: "BSMM-lab-2"
 subtitle: "BSMM 8740 Fall 2023"
-author: "Add your name here"
-date: "Add the date here"
+author: "Sepideh AhmadiTalei"
+date: "September 28, 2023"
 format: html
 editor: visual
 self-contained: true
@@ -11,6 +11,23 @@ self-contained: true
 ## Setup
 
 Load packages and data:
+
+```{r load-pkg}
+
+install.packages("magrittr")
+install.packages("tidyverse")
+install.packages("tidymodels")
+install.packages("gt")
+install.packages("gtExtras")
+install.packages("DataExplorer")
+
+library(magrittr)     # the pipe
+library(tidyverse)    # for data wrangling + visualization
+library(tidymodels)   # for modeling
+library(gt)           # for making display tables
+library(gtExtras)     # helper functions for beautiful tables
+library(DataExplorer) #
+```
 
 ```{r load-pkg-data}
 #| message: false
@@ -22,9 +39,42 @@ the_tate_artists <- readr::read_csv("data/the-tate-artists.csv")
 
 ### Exercise 1
 
-The `the_tate` dataset has \_\_\_ unique artists who worked from \_\_\_ to \_\_\_. The works were acquired between the years \_\_\_ and \_\_\_.
+```{r Summarize data}
+the_tate |>
+  dplyr::summarize(
+    artist = length(unique(artist)),  
+    min_year = min(year, na.rm = TRUE), 
+    max_year = max(year, na.rm = TRUE),
+    min_acquisitionYear = min(acquisitionYear, na.rm = TRUE),  
+    max_acquisitionYear = max(acquisitionYear, na.rm = TRUE),  
+  )
+```
+
+The `the_tate` dataset has \_*3336*\_ unique artists who worked from \_*1545*\_ to \_*2012*\_. The works were acquired between the years \_*1823*\_ and \_*2013*\_.
 
 ### Exercise 2
+
+```{r Missing data}
+the_tate |>
+  DataExplorer::introduce()
+```
+
+```{r}
+the_tate |>
+  DataExplorer::plot_missing()
+```
+
+```{r}
+the_tate |>
+  dplyr::filter(is.na(year)) |>
+  dplyr::distinct(artist)
+```
+
+```{r}
+the_tate |>
+  dplyr::filter(is.na(year)) |>
+  dplyr::distinct(title)
+```
 
 How number of works with missing dates is \_\_.
 
@@ -36,11 +86,35 @@ The missing year data likely to be classified as \_\_\_\_.
 
 ### Exercise 3
 
-The artist with the most works in the Tate collection is \_\_\_.
+```{r Ordering artists by number of works}
+the_tate |>
+  dplyr::group_by(artist) |>
+  dplyr::mutate(number_of_works=n()) |>
+  dplyr::select(artist,number_of_works) |>
+  dplyr::arrange(desc(n)) |>
+  dplyr::distinct() |>
+  dplyr::ungroup() |>
+  dplyr::slice(c(1,10)
+  )
+```
 
-The artist with the tenth-most works in the Tate collection is \_\_\_.
+The artist with the most works in the Tate collection is \_*Turner, Joseph Mallord*\_.
+
+The artist with the tenth-most works in the Tate collection is \_*Warhol, Andy*\_.
 
 ### Exercise 4
+
+```{r}
+the_tate |>
+  dplyr::group_by(artist) |>
+  dplyr::mutate(number_of_works=n()) |>
+  dplyr::select(artist,number_of_works) |>
+  dplyr::arrange(desc(n)) |>
+  dplyr::distinct() |>
+  dplyr::ungroup() |>
+  dplyr::slice(c(1,10)
+  )
+```
 
 The artist with the greatest number of works in the Tate collection represent \_\_\_% of the total number of works
 
