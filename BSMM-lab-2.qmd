@@ -64,25 +64,61 @@ the_tate |>
   DataExplorer::plot_missing()
 ```
 
-```{r}
+```{r Number of works with missing date / wih or without Title}
+the_tate |>
+  dplyr::filter(is.na(year)) |>
+  nrow()
+```
+
+```{r Number of works with missing date / by Title}
+the_tate |>
+  dplyr::filter(is.na(year)) |>
+    dplyr::distinct(title)
+
+```
+
+```{r Number of works with missing date / by Artist}
 the_tate |>
   dplyr::filter(is.na(year)) |>
   dplyr::distinct(artist)
 ```
 
-```{r}
-the_tate |>
+```{r Number of works with missing date / by Artist}
+tate_summary <- the_tate |>
   dplyr::filter(is.na(year)) |>
-  dplyr::distinct(title)
+  dplyr::group_by(artist) |>
+  dplyr:: summarise(
+    Number_of_missing = sum(is.na(year))
+    )  |>
+  dplyr::arrange(desc(Number_of_missing))
+
+tate_summary
+
 ```
 
-How number of works with missing dates is \_\_.
+```{r percentage and Cumulative percentage of missing date for each artist}
 
-The number of artists whose works have missing dates is \_\_.
+tate_summary_per <- tate_summary |>
+   dplyr::mutate(percentage = (Number_of_missing*100)/5397)|>
+   dplyr::mutate(Cum_percentage = cumsum(percentage)) 
 
-It would require resolving missing year data for only \_\_ artists resolve resolve at least 50% of the missing data.
+ tate_summary_per
+```
 
-The missing year data likely to be classified as \_\_\_\_.
+```{r Minimum number of artists required to resolve at least 50% of the missing date}
+
+Minimum_number_artists <- min(which(tate_summary_per $Cum_percentage  >= 50))
+
+Minimum_number_artists
+```
+
+How number of works with missing dates is \_*5397*\_.
+
+The number of artists whose works have missing dates is \_*461*\_.
+
+It would require resolving missing year data for only \_11\_ artists resolve resolve at least 50% of the missing data.
+
+The missing year data likely to be classified as \_MAR\_.
 
 ### Exercise 3
 
@@ -91,10 +127,10 @@ the_tate |>
   dplyr::group_by(artist) |>
   dplyr::mutate(number_of_works=n()) |>
   dplyr::select(artist,number_of_works) |>
-  dplyr::arrange(desc(n)) |>
+  dplyr::arrange(desc(number_of_works)) |>
   dplyr::distinct() |>
   dplyr::ungroup() |>
-  dplyr::slice(c(1,10)
+  dplyr::slice(c(1:10)
   )
 ```
 
@@ -104,42 +140,142 @@ The artist with the tenth-most works in the Tate collection is \_*Warhol, Andy*\
 
 ### Exercise 4
 
-```{r}
-the_tate |>
+```{r Calculation of percentage of works of artists}
+artists_per <- the_tate |>
   dplyr::group_by(artist) |>
   dplyr::mutate(number_of_works=n()) |>
   dplyr::select(artist,number_of_works) |>
-  dplyr::arrange(desc(n)) |>
+  dplyr::arrange(desc(number_of_works)) |>
   dplyr::distinct() |>
   dplyr::ungroup() |>
-  dplyr::slice(c(1,10)
-  )
+  dplyr::mutate(work_percentage = ((number_of_works*100)/69201))
+
+artists_per
 ```
 
-The artist with the greatest number of works in the Tate collection represent \_\_\_% of the total number of works
+The artist with the greatest number of works in the Tate collection represent \_56.92% of the total number of works
 
 ### Exercise 5
 
-There are \_\_ duplicate artist-title pairs
+```{r Duplicate artist-title pairs}
+
+total_works <- nrow(the_tate)
+distinct_artist_title_pair <- the_tate %>% 
+  select(artist,title) %>% 
+  distinct()
+distinct_count <- nrow(distinct_artist_title_pair)
+duplicate_count <- total_works - distinct_count
+
+duplicate_count
+```
+
+There are \_*23705*\_ duplicate artist-title pairs
 
 ### Exercise 6
 
-The artist with the largest work in the tate collection is \_\_\_
+```{r Sorting based on the area of artworks}
+artworks_area <- the_tate |>
+  dplyr::mutate(area=width * height) |>
+  dplyr:: select(artist, title, area) %>%
+drop_na 
+```
 
-The artist with the smallest work in the collection is \_\_\_. The smallest work has area \_\_\_ $\text{cm}^2$
+```{r}
+artworks_area  |>
+  dplyr::arrange(desc(area)) 
+
+
+```
+
+```{r The largest artwork in the collection}
+largest_artwork <- artworks_area %>%
+  slice_head(n = 1)
+largest_artwork
+```
+
+```{r The smallest artwork in the collection}
+smallest_artwork <- artworks_area %>%
+  slice_tail(n = 1)
+smallest_artwork
+```
+
+The artist with the largest work in the tate collection is *Charlton, Alan*.
+
+The artist with the smallest work in the collection is *Flaxman, John*. The smallest work has area *26666* \$\\text{cm}\^2\$
+
+$\text{cm}^2$
 
 ### Exercise 7
 
-...
+```{r Left join }
+the_tate <- left_join(the_tate, the_tate_artists, by = c("artist" = "name"))
+
+```
+
+```{r}
+the_tate <- the_tate %>%
+  filter(!is.na(gender))
+```
+
+```{r}
+resulting_table <- the_tate %>%
+  group_by(gender) %>%
+  summarise(count = n())
+```
+
+```{r}
+resulting_table
+```
 
 ### Exercise 8
 
-The annual return in the SPX price in 2020 was \_\_\_%.
+```{r}
+dataofstock <- read_csv("data/SPX_HistoricalData_1692322132002.csv")
+View(dataofstock)
+```
 
-The corresponding price volatility was \_\_\_%.
+```{r}
+dataofstock <- dataofstock %>%
+  mutate(Year = lubridate::year(as.Date(Date, format = "%m/%d/%Y")))
+
+
+dataofstock <- dataofstock %>%
+  rename("close"=`Close/Last`)
+
+dataofstock <- dataofstock %>%
+  mutate(rd = log(lead(close) / close))
+
+
+dataofstock <- dataofstock %>%
+  mutate(vard = rd^2)
+
+summary_data <- dataofstock %>%
+  group_by(Year) %>%
+  summarize(
+    Annual_Return = (exp(sum(rd, na.rm = TRUE)) - 1)*100,
+    Annual_StdDev = sqrt(sum(vard, na.rm = TRUE))*100,
+    .groups = "drop"  # Drop grouping after summary
+  )
+
+summary_data
+
+```
+
+The annual return in the SPX price in 2020 was -13.98%.
+
+The corresponding price volatility was 34.70%.
 
 ### Exercise 9
 
-The period volatility was \_\_\_.\_%
+```{r Calculate the period volatility as the standard deviation of annual returns}
+period_volatility <- sd(summary_data$Annual_Return)
+
+period_volatility
+
+cat("The period volatility was:",period_volatility, "%\n")
+
+```
+
+The period volatility was 19.51%
 
 ### 
